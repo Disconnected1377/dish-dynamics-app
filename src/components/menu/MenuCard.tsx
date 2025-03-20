@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
+import { useNavigate } from 'react-router-dom';
 
 interface MenuCardProps {
   id: string;
@@ -40,6 +41,7 @@ const MenuCard: React.FC<MenuCardProps> = ({
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const mealTypeColors = {
     breakfast: 'bg-blue-100 text-blue-800',
@@ -53,6 +55,11 @@ const MenuCard: React.FC<MenuCardProps> = ({
     lunch: 'Lunch',
     snacks: 'Snacks',
     dinner: 'Dinner',
+  };
+
+  const handleGiveFeedback = () => {
+    setIsDetailsOpen(false);
+    navigate(`/feedback?menuItemId=${id}`);
   };
 
   return (
@@ -225,9 +232,12 @@ const MenuCard: React.FC<MenuCardProps> = ({
             </div>
           </div>
 
-          <DialogClose asChild>
-            <Button className="mt-2 w-full">Close</Button>
-          </DialogClose>
+          <div className="flex justify-between mt-4">
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
+            <Button onClick={handleGiveFeedback}>Give Feedback</Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

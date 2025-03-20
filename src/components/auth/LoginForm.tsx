@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Schema for form validation
 const loginSchema = z.object({
@@ -21,6 +22,12 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
+  const { signIn } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  // Get the return URL from location state or default to home
+  const returnTo = location.state?.returnTo || '/';
   
   const {
     register,
@@ -36,21 +43,14 @@ const LoginForm = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      // Simulate API call with timeout
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Login data:', data);
-      toast({
-        title: 'Success',
-        description: 'You have been logged in successfully.',
-      });
-      // Add actual login logic here when backend is connected
+      const { error } = await signIn(data.email, data.password);
+      
+      if (!error) {
+        // Redirect to the return URL on successful login
+        navigate(returnTo);
+      }
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to login. Please try again.',
-        variant: 'destructive',
-      });
     }
   };
 

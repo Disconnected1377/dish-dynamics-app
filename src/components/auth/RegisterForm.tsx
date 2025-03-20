@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Checkbox } from '@/components/ui/checkbox';
+import { useAuth } from '@/contexts/AuthContext';
 
 // Schema for form validation
 const registerSchema = z.object({
@@ -35,6 +36,8 @@ const RegisterForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { toast } = useToast();
+  const { signUp } = useAuth();
+  const navigate = useNavigate();
   
   const {
     register,
@@ -55,21 +58,19 @@ const RegisterForm = () => {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
-      // Simulate API call with timeout
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      console.log('Registration data:', data);
-      toast({
-        title: 'Account created',
-        description: 'You have been registered successfully.',
-      });
-      // Add actual registration logic here when backend is connected
+      const userData = {
+        username: data.username,
+        user_type: data.userType,
+      };
+
+      const { error } = await signUp(data.email, data.password, userData);
+      
+      if (!error) {
+        // On successful registration, navigate to login or dashboard
+        navigate('/');
+      }
     } catch (error) {
       console.error('Registration error:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to register. Please try again.',
-        variant: 'destructive',
-      });
     }
   };
 

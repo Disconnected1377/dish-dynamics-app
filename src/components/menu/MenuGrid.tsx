@@ -1,137 +1,72 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import MenuCard from './MenuCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Search, Filter, X } from 'lucide-react';
-
-// Sample menu data
-const sampleMenuItems = [
-  {
-    id: 'item1',
-    title: 'Masala Dosa with Coconut Chutney',
-    description: 'Crispy South Indian crepe made from fermented batter, served with coconut chutney.',
-    imageUrl: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    rating: 4.7,
-    mealType: 'breakfast' as const,
-    tags: ['South Indian', 'Vegetarian', 'Popular', 'Crispy'],
-    servingTime: '7:30 - 9:30 AM',
-    detailedDescription: 'A traditional South Indian breakfast, the crispy dosa is made from a fermented batter of rice and lentils, filled with a spiced potato mixture, and served with freshly made coconut chutney and sambar.',
-    ingredients: ['Rice', 'Urad Dal', 'Potatoes', 'Onions', 'Green Chilies', 'Mustard Seeds', 'Turmeric', 'Coconut', 'Curry Leaves'],
-    nutritionalInfo: {
-      calories: 250,
-      protein: 6,
-      carbs: 45,
-      fat: 7,
-    },
-  },
-  {
-    id: 'item2',
-    title: 'Paneer Butter Masala with Naan',
-    description: 'Rich and creamy curry with cottage cheese chunks in a tomato-based sauce.',
-    imageUrl: 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    rating: 4.8,
-    mealType: 'lunch' as const,
-    tags: ['North Indian', 'Vegetarian', 'Spicy', 'Popular'],
-    servingTime: '12:30 - 2:30 PM',
-    detailedDescription: 'A popular North Indian dish featuring soft cubes of paneer (cottage cheese) cooked in a rich, creamy tomato sauce with aromatic spices. Served with freshly baked naan bread.',
-    ingredients: ['Paneer', 'Tomatoes', 'Cream', 'Butter', 'Cashews', 'Garam Masala', 'Kasuri Methi', 'Onions', 'Garlic', 'Ginger'],
-    nutritionalInfo: {
-      calories: 450,
-      protein: 18,
-      carbs: 30,
-      fat: 28,
-    },
-  },
-  {
-    id: 'item3',
-    title: 'Samosa with Mint Chutney',
-    description: 'Crispy pastry filled with spiced potatoes and peas, served with tangy mint chutney.',
-    imageUrl: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    rating: 4.6,
-    mealType: 'snacks' as const,
-    tags: ['North Indian', 'Vegetarian', 'Fried', 'Savory'],
-    servingTime: '4:00 - 5:30 PM',
-    ingredients: ['Flour', 'Potatoes', 'Peas', 'Cumin', 'Coriander', 'Green Chilies', 'Mint', 'Lemon Juice'],
-  },
-  {
-    id: 'item4',
-    title: 'Chicken Biryani',
-    description: 'Fragrant basmati rice cooked with marinated chicken pieces and aromatic spices.',
-    imageUrl: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    rating: 4.9,
-    mealType: 'dinner' as const,
-    tags: ['Hyderabadi', 'Non-Vegetarian', 'Spicy', 'Rice'],
-    servingTime: '7:30 - 9:30 PM',
-    detailedDescription: 'A royal Indian dish made with fragrant basmati rice, tender chicken, and a blend of aromatic spices. Slow-cooked to perfection using the dum method, where the pot is sealed to lock in all the flavors.',
-    ingredients: ['Basmati Rice', 'Chicken', 'Yogurt', 'Onions', 'Tomatoes', 'Ginger-Garlic Paste', 'Biryani Masala', 'Saffron', 'Mint', 'Coriander'],
-    nutritionalInfo: {
-      calories: 550,
-      protein: 32,
-      carbs: 65,
-      fat: 18,
-    },
-  },
-  {
-    id: 'item5',
-    title: 'Idli Sambar',
-    description: 'Soft, steamed rice cakes served with lentil-based vegetable stew and coconut chutney.',
-    imageUrl: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    rating: 4.5,
-    mealType: 'breakfast' as const,
-    tags: ['South Indian', 'Vegetarian', 'Healthy', 'Steamed'],
-    servingTime: '7:30 - 9:30 AM',
-  },
-  {
-    id: 'item6',
-    title: 'Vegetable Pulao',
-    description: 'Fragrant rice cooked with mixed vegetables and mild spices.',
-    imageUrl: 'https://images.unsplash.com/photo-1596797038530-2c107aa7e1fe?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    rating: 4.4,
-    mealType: 'lunch' as const,
-    tags: ['North Indian', 'Vegetarian', 'Rice', 'Mildly Spiced'],
-    servingTime: '12:30 - 2:30 PM',
-  },
-  {
-    id: 'item7',
-    title: 'Masala Chai with Biscuits',
-    description: 'Spiced Indian tea served with cookies for a perfect evening break.',
-    imageUrl: 'https://images.unsplash.com/photo-1571939228382-b2f2b585ce15?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    rating: 4.7,
-    mealType: 'snacks' as const,
-    tags: ['Beverage', 'Spiced', 'Hot', 'Teatime'],
-    servingTime: '4:00 - 5:30 PM',
-  },
-  {
-    id: 'item8',
-    title: 'Dal Makhani with Jeera Rice',
-    description: 'Creamy black lentils simmered overnight, served with cumin-flavored rice.',
-    imageUrl: 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80',
-    rating: 4.8,
-    mealType: 'dinner' as const,
-    tags: ['Punjabi', 'Vegetarian', 'Rich', 'Creamy'],
-    servingTime: '7:30 - 9:30 PM',
-  },
-];
+import { Search, Filter, X, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const MenuGrid = () => {
   const [activeTab, setActiveTab] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortOption, setSortOption] = useState<string>('rating');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [menuItems, setMenuItems] = useState<any[]>([]);
+  const [allTags, setAllTags] = useState<string[]>([]);
+  const { toast } = useToast();
   
-  // Extract unique tags from menu items
-  const allTags = Array.from(
-    new Set(sampleMenuItems.flatMap(item => item.tags))
-  ).sort();
+  // Fetch menu items from Supabase
+  useEffect(() => {
+    const fetchMenuItems = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('menu_items')
+          .select('*')
+          .order('rating', { ascending: false });
+
+        if (error) {
+          console.error('Error fetching menu items:', error);
+          toast({
+            title: 'Error',
+            description: 'Failed to load menu items.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        setMenuItems(data || []);
+        
+        // Extract unique tags from menu items
+        const tags = Array.from(
+          new Set(data?.flatMap(item => item.tags || []))
+        ).sort();
+        
+        setAllTags(tags);
+      } catch (error) {
+        console.error('Error fetching menu items:', error);
+        toast({
+          title: 'Error',
+          description: 'An unexpected error occurred.',
+          variant: 'destructive',
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMenuItems();
+  }, [toast]);
 
   // Filter menu items based on active tab, search, and tags
-  const filteredMenuItems = sampleMenuItems.filter(item => {
+  const filteredMenuItems = menuItems.filter(item => {
     // Filter by meal type (tab)
-    if (activeTab !== 'all' && item.mealType !== activeTab) {
+    if (activeTab !== 'all' && item.meal_type !== activeTab) {
       return false;
     }
     
@@ -139,8 +74,8 @@ const MenuGrid = () => {
     if (
       searchTerm &&
       !item.title.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !item.description.toLowerCase().includes(searchTerm.toLowerCase()) &&
-      !item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
+      !item.description?.toLowerCase().includes(searchTerm.toLowerCase()) &&
+      !(item.tags && item.tags.some((tag: string) => tag.toLowerCase().includes(searchTerm.toLowerCase())))
     ) {
       return false;
     }
@@ -148,7 +83,7 @@ const MenuGrid = () => {
     // Filter by selected tags
     if (
       selectedTags.length > 0 &&
-      !selectedTags.every(tag => item.tags.includes(tag))
+      (!item.tags || !selectedTags.every(tag => item.tags.includes(tag)))
     ) {
       return false;
     }
@@ -185,6 +120,15 @@ const MenuGrid = () => {
     setSelectedTags([]);
     setActiveTab('all');
   };
+  
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
+        <p className="text-lg">Loading menu items...</p>
+      </div>
+    );
+  }
   
   return (
     <div className="w-full animate-fade-in">
@@ -313,7 +257,19 @@ const MenuGrid = () => {
         <TabsContent value="all" className="mt-0">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {sortedMenuItems.map((item) => (
-              <MenuCard key={item.id} {...item} />
+              <MenuCard 
+                key={item.id} 
+                id={item.id}
+                title={item.title}
+                description={item.description}
+                imageUrl={item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}
+                rating={Number(item.rating) || 0}
+                mealType={item.meal_type}
+                tags={item.tags || []}
+                servingTime={item.serving_time}
+                detailedDescription={item.detailed_description}
+                ingredients={item.ingredients}
+              />
             ))}
           </div>
           
@@ -334,13 +290,25 @@ const MenuGrid = () => {
           <TabsContent key={mealType} value={mealType} className="mt-0">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {sortedMenuItems
-                .filter((item) => item.mealType === mealType)
+                .filter((item) => item.meal_type === mealType)
                 .map((item) => (
-                  <MenuCard key={item.id} {...item} />
+                  <MenuCard 
+                    key={item.id} 
+                    id={item.id}
+                    title={item.title}
+                    description={item.description}
+                    imageUrl={item.image_url || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80'}
+                    rating={Number(item.rating) || 0}
+                    mealType={item.meal_type}
+                    tags={item.tags || []}
+                    servingTime={item.serving_time}
+                    detailedDescription={item.detailed_description}
+                    ingredients={item.ingredients}
+                  />
                 ))}
             </div>
             
-            {sortedMenuItems.filter((item) => item.mealType === mealType).length === 0 && (
+            {sortedMenuItems.filter((item) => item.meal_type === mealType).length === 0 && (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">
                   No {mealType} items match your filters.
