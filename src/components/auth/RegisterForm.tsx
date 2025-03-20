@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -35,6 +35,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 const RegisterForm = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const { toast } = useToast();
   const { signUp } = useAuth();
   const navigate = useNavigate();
@@ -44,6 +45,7 @@ const RegisterForm = () => {
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
+    setError,
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
@@ -58,6 +60,8 @@ const RegisterForm = () => {
 
   const onSubmit = async (data: RegisterFormValues) => {
     try {
+      setIsRegistering(true);
+      
       const userData = {
         username: data.username,
         user_type: data.userType,
@@ -65,12 +69,39 @@ const RegisterForm = () => {
 
       const { error } = await signUp(data.email, data.password, userData);
       
-      if (!error) {
-        // On successful registration, navigate to login or dashboard
-        navigate('/');
+      if (error) {
+        // Handle specific error cases
+        if (error.message.includes('email already in use')) {
+          setError('email', { 
+            type: 'manual', 
+            message: 'This email is already registered. Please try logging in.'
+          });
+        } else {
+          toast({
+            title: 'Registration failed',
+            description: error.message,
+            variant: 'destructive',
+          });
+        }
+        return;
       }
+
+      toast({
+        title: 'Account created successfully',
+        description: 'You can now log in with your credentials.',
+      });
+      
+      // On successful registration, navigate to login
+      navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
+      toast({
+        title: 'Registration failed',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRegistering(false);
     }
   };
 
@@ -100,6 +131,7 @@ const RegisterForm = () => {
             aria-invalid={errors.username ? "true" : "false"}
             aria-describedby={errors.username ? "username-error" : undefined}
             className={errors.username ? "border-destructive" : ""}
+            disabled={isRegistering}
           />
           {errors.username && (
             <div className="flex items-center gap-2 text-sm text-destructive" id="username-error">
@@ -109,6 +141,7 @@ const RegisterForm = () => {
           )}
         </div>
 
+        {/* Email field */}
         <div className="space-y-2">
           <Label 
             htmlFor="email" 
@@ -125,6 +158,7 @@ const RegisterForm = () => {
             aria-invalid={errors.email ? "true" : "false"}
             aria-describedby={errors.email ? "email-error" : undefined}
             className={errors.email ? "border-destructive" : ""}
+            disabled={isRegistering}
           />
           {errors.email && (
             <div className="flex items-center gap-2 text-sm text-destructive" id="email-error">
@@ -134,6 +168,7 @@ const RegisterForm = () => {
           )}
         </div>
 
+        {/* Password field */}
         <div className="space-y-2">
           <Label 
             htmlFor="password" 
@@ -151,6 +186,7 @@ const RegisterForm = () => {
               aria-invalid={errors.password ? "true" : "false"}
               aria-describedby={errors.password ? "password-error" : undefined}
               className={errors.password ? "border-destructive pr-10" : "pr-10"}
+              disabled={isRegistering}
             />
             <button
               type="button"
@@ -158,6 +194,7 @@ const RegisterForm = () => {
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               aria-label={showPassword ? "Hide password" : "Show password"}
               tabIndex={-1}
+              disabled={isRegistering}
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -174,6 +211,7 @@ const RegisterForm = () => {
           )}
         </div>
 
+        {/* Confirm Password field */}
         <div className="space-y-2">
           <Label 
             htmlFor="confirmPassword" 
@@ -191,6 +229,7 @@ const RegisterForm = () => {
               aria-invalid={errors.confirmPassword ? "true" : "false"}
               aria-describedby={errors.confirmPassword ? "confirm-password-error" : undefined}
               className={errors.confirmPassword ? "border-destructive pr-10" : "pr-10"}
+              disabled={isRegistering}
             />
             <button
               type="button"
@@ -198,6 +237,7 @@ const RegisterForm = () => {
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               aria-label={showConfirmPassword ? "Hide password" : "Show password"}
               tabIndex={-1}
+              disabled={isRegistering}
             >
               {showConfirmPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -214,6 +254,7 @@ const RegisterForm = () => {
           )}
         </div>
 
+        {/* Account Type radios */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">Account Type</Label>
           <div className="flex flex-col gap-2">
@@ -224,6 +265,7 @@ const RegisterForm = () => {
                 value="user1"
                 {...register('userType')}
                 className="h-4 w-4 text-primary"
+                disabled={isRegistering}
               />
               <Label htmlFor="user1" className="font-normal cursor-pointer">
                 Mess Worker (can update menu)
@@ -236,6 +278,7 @@ const RegisterForm = () => {
                 value="user2"
                 {...register('userType')}
                 className="h-4 w-4 text-primary"
+                disabled={isRegistering}
               />
               <Label htmlFor="user2" className="font-normal cursor-pointer">
                 Regular User (can view menu and give feedback)
@@ -249,12 +292,14 @@ const RegisterForm = () => {
           )}
         </div>
 
+        {/* Terms checkbox */}
         <div className="flex items-start gap-2">
           <Checkbox
             id="terms"
             {...register('termsAccepted')}
             aria-invalid={errors.termsAccepted ? "true" : "false"}
             aria-describedby={errors.termsAccepted ? "terms-error" : undefined}
+            disabled={isRegistering}
           />
           <div className="grid gap-1.5 leading-none">
             <Label
@@ -287,13 +332,21 @@ const RegisterForm = () => {
           </div>
         </div>
 
+        {/* Submit button */}
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isRegistering}
           className="w-full"
-          aria-busy={isSubmitting}
+          aria-busy={isRegistering}
         >
-          {isSubmitting ? "Creating account..." : "Create account"}
+          {isRegistering ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Creating account...
+            </>
+          ) : (
+            "Create account"
+          )}
         </Button>
       </form>
 

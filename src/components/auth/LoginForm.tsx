@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 const LoginForm = () => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const { toast } = useToast();
   const { signIn } = useAuth();
   const navigate = useNavigate();
@@ -32,7 +33,8 @@ const LoginForm = () => {
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
+    setError,
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -43,14 +45,52 @@ const LoginForm = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
+      setIsLoggingIn(true);
+      
       const { error } = await signIn(data.email, data.password);
       
-      if (!error) {
-        // Redirect to the return URL on successful login
-        navigate(returnTo);
+      if (error) {
+        // Handle specific error cases
+        if (error.message.includes('Invalid login credentials')) {
+          setError('email', { 
+            type: 'manual', 
+            message: 'Invalid email or password'
+          });
+          setError('password', { 
+            type: 'manual', 
+            message: 'Invalid email or password'
+          });
+          toast({
+            title: 'Login failed',
+            description: 'Invalid email or password. Please try again.',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Login failed',
+            description: error.message,
+            variant: 'destructive',
+          });
+        }
+        return;
       }
+
+      toast({
+        title: 'Login successful',
+        description: 'Welcome back to Annapurna Mess!',
+      });
+      
+      // Redirect to the return URL on successful login
+      navigate(returnTo);
     } catch (error) {
       console.error('Login error:', error);
+      toast({
+        title: 'Login failed',
+        description: 'An unexpected error occurred. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -84,6 +124,7 @@ const LoginForm = () => {
             aria-invalid={errors.email ? "true" : "false"}
             aria-describedby={errors.email ? "email-error" : undefined}
             className={errors.email ? "border-destructive" : ""}
+            disabled={isLoggingIn}
           />
           {errors.email && (
             <div className="flex items-center gap-2 text-sm text-destructive" id="email-error">
@@ -118,6 +159,7 @@ const LoginForm = () => {
               aria-invalid={errors.password ? "true" : "false"}
               aria-describedby={errors.password ? "password-error" : undefined}
               className={errors.password ? "border-destructive pr-10" : "pr-10"}
+              disabled={isLoggingIn}
             />
             <button
               type="button"
@@ -125,6 +167,7 @@ const LoginForm = () => {
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
               aria-label={showPassword ? "Hide password" : "Show password"}
               tabIndex={-1}
+              disabled={isLoggingIn}
             >
               {showPassword ? (
                 <EyeOff className="h-4 w-4" />
@@ -143,11 +186,18 @@ const LoginForm = () => {
 
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isLoggingIn}
           className="w-full"
-          aria-busy={isSubmitting}
+          aria-busy={isLoggingIn}
         >
-          {isSubmitting ? "Signing in..." : "Sign in"}
+          {isLoggingIn ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Signing in...
+            </>
+          ) : (
+            "Sign in"
+          )}
         </Button>
       </form>
 
