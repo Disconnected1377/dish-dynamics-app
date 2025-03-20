@@ -120,7 +120,7 @@ const Feedback = () => {
           .update({
             rating,
             comment,
-            updated_at: new Date(),
+            updated_at: new Date().toISOString(), // Fix: Convert Date to ISO string
           })
           .eq('id', existingFeedback.id);
       } else {

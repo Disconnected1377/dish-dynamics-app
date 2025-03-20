@@ -268,7 +268,7 @@ const EditMenuItem = () => {
           serving_time: formData.serving_time,
           detailed_description: formData.detailed_description,
           ingredients: filteredIngredients,
-          updated_at: new Date(),
+          updated_at: new Date().toISOString(), // Fix: Convert Date to ISO string
         })
         .eq('id', id);
 
