@@ -88,7 +88,7 @@ const Index = () => {
         <div className="container mx-auto px-4 md:px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-              Why Use Our Mess Menu App?
+              Why Use Our Annapurna App?
             </h2>
             <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
               We've designed our app to make your campus dining experience better and more enjoyable.
@@ -135,7 +135,7 @@ const Index = () => {
                 Ready to Enhance Your Dining Experience?
               </h2>
               <p className="text-muted-foreground text-lg mb-6">
-                Join our platform to get the most out of your campus dining. View menus, provide feedback, and never miss your favorite meal again.
+                Join the Annapurna platform to get the most out of your campus dining. View menus, provide feedback, and never miss your favorite meal again.
               </p>
               <Button asChild size="lg" className="rounded-full gap-1">
                 <Link to="/register">

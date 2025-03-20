@@ -12,7 +12,7 @@ const Footer = () => {
           <div>
             <Link to="/" className="flex items-center gap-2 mb-4">
               <ChefHat className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold tracking-tight">Mess Menu</span>
+              <span className="text-xl font-bold tracking-tight">Annapurna</span>
             </Link>
             <p className="text-muted-foreground mb-4">
               Providing delicious and nutritious meals for our community. Check our daily menu 
@@ -66,17 +66,17 @@ const Footer = () => {
               </li>
               <li className="flex items-center gap-2">
                 <Mail className="h-5 w-5 text-primary" />
-                <span className="text-foreground/80">contact@messmenu.com</span>
+                <span className="text-foreground/80">contact@annapurna.com</span>
               </li>
               <li className="flex items-center gap-2">
                 <ExternalLink className="h-5 w-5 text-primary" />
                 <a 
-                  href="https://www.messmenu.com" 
+                  href="https://www.annapurna.com" 
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="text-foreground/80 hover:text-primary transition-colors"
                 >
-                  www.messmenu.com
+                  www.annapurna.com
                 </a>
               </li>
             </ul>
@@ -88,7 +88,7 @@ const Footer = () => {
 
         {/* Copyright */}
         <div className="text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} Mess Menu. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Annapurna. All rights reserved.</p>
         </div>
       </div>
     </footer>

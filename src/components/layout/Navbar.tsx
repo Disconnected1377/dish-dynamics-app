@@ -42,10 +42,10 @@ const Navbar = () => {
         <Link 
           to="/" 
           className="flex items-center gap-2 text-xl font-bold tracking-tight"
-          aria-label="Mess Menu Home"
+          aria-label="Annapurna Home"
         >
           <ChefHat className="h-6 w-6 text-primary" />
-          <span className="hidden sm:inline-block">Mess Menu</span>
+          <span className="hidden sm:inline-block">Annapurna</span>
         </Link>
 
         {/* Desktop Navigation */}
