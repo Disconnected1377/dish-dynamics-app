@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, AlertCircle, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,9 +31,11 @@ const registerSchema = z.object({
     .regex(/[0-9]/, { message: 'Password must contain at least one number' }),
   confirmPassword: z.string(),
   userType: z.enum(['user1', 'user2']),
-  termsAccepted: z.literal(true, {
-    errorMap: () => ({ message: 'You must accept the terms and conditions' }),
-  }),
+  // Changed from literal(true) to boolean() with a custom refine to handle the error better
+  termsAccepted: z.boolean()
+    .refine(val => val === true, {
+      message: 'You must accept the terms and conditions',
+    }),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -57,7 +59,7 @@ const RegisterForm = () => {
       password: '',
       confirmPassword: '',
       userType: 'user2',
-      termsAccepted: false,
+      termsAccepted: false, // This is fine now since we've changed the schema
     },
   });
 
