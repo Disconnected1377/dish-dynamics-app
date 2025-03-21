@@ -2,12 +2,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, ChefHat } from 'lucide-react';
+import { Menu, X, User, ChefHat, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   // Handle scroll effect
   useEffect(() => {
@@ -26,6 +28,11 @@ const Navbar = () => {
   // Toggle mobile menu
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    setIsMobileMenuOpen(false);
   };
 
   return (
@@ -75,15 +82,37 @@ const Navbar = () => {
 
         {/* Authentication Buttons - Desktop */}
         <div className="hidden md:flex items-center gap-3">
-          <Link to="/login">
-            <Button variant="outline" size="sm" className="rounded-full gap-1">
-              <User className="h-4 w-4" />
-              <span>Login</span>
-            </Button>
-          </Link>
-          <Link to="/register">
-            <Button size="sm" className="rounded-full">Register</Button>
-          </Link>
+          {user ? (
+            <>
+              <Link to="/account">
+                <Button variant="outline" size="sm" className="rounded-full gap-1">
+                  <User className="h-4 w-4" />
+                  <span>Account</span>
+                </Button>
+              </Link>
+              <Button 
+                size="sm" 
+                variant="ghost" 
+                className="rounded-full" 
+                onClick={handleSignOut}
+              >
+                <LogOut className="h-4 w-4 mr-1" />
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link to="/login">
+                <Button variant="outline" size="sm" className="rounded-full gap-1">
+                  <User className="h-4 w-4" />
+                  <span>Login</span>
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button size="sm" className="rounded-full">Register</Button>
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile Menu Button */}
@@ -126,20 +155,41 @@ const Navbar = () => {
             Feedback
           </Link>
           <div className="border-t my-3 border-border"></div>
-          <Link
-            to="/login"
-            className="flex items-center py-3 text-lg"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            Login
-          </Link>
-          <Link
-            to="/register"
-            className="flex items-center py-3 text-lg"
-            onClick={() => setIsMobileMenuOpen(false)}
-          >
-            Register
-          </Link>
+          
+          {user ? (
+            <>
+              <Link
+                to="/account"
+                className="flex items-center py-3 text-lg"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Account
+              </Link>
+              <button
+                className="flex items-center py-3 text-lg text-left"
+                onClick={handleSignOut}
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="flex items-center py-3 text-lg"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="flex items-center py-3 text-lg"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Register
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>

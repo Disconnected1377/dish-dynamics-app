@@ -14,6 +14,7 @@ import Feedback from "./pages/Feedback";
 import Dashboard from "./pages/Dashboard";
 import AddMenuItem from "./pages/AddMenuItem";
 import EditMenuItem from "./pages/EditMenuItem";
+import Account from "./pages/Account";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/add-menu-item" element={<AddMenuItem />} />
             <Route path="/edit-menu-item/:id" element={<EditMenuItem />} />
+            <Route path="/account" element={<Account />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
