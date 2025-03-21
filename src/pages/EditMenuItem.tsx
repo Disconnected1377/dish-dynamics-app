@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import Navbar from '@/components/layout/Navbar';
@@ -27,10 +26,11 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const EditMenuItem = () => {
   const { id } = useParams<{ id: string }>();
-  const { user, userType, loading } = useAuth();
+  const { user, userType, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -51,76 +51,77 @@ const EditMenuItem = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [dataFetched, setDataFetched] = useState(false);
 
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!loading && !user) {
-      navigate('/login', { state: { returnTo: `/edit-menu-item/${id}` } });
-      return;
-    }
-    
-    // Redirect regular users to home
-    if (!loading && user && userType !== 'user1') {
-      navigate('/');
-      toast({
-        title: 'Access Denied',
-        description: 'Only mess workers can edit menu items.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!id) {
-      setError('No menu item ID provided');
-      setIsLoading(false);
-      return;
-    }
-
-    // Fetch menu item data
-    const fetchMenuItem = async () => {
-      try {
-        const { data, error } = await supabase
-          .from('menu_items')
-          .select('*')
-          .eq('id', id)
-          .single();
-
-        if (error) {
-          console.error('Error fetching menu item:', error);
-          setError('Failed to load menu item data. Please try again.');
-          setIsLoading(false);
-          return;
-        }
-
-        if (!data) {
-          setError('Menu item not found');
-          setIsLoading(false);
-          return;
-        }
-
-        setFormData({
-          title: data.title || '',
-          description: data.description || '',
-          meal_type: data.meal_type || '',
-          serving_time: data.serving_time || '',
-          detailed_description: data.detailed_description || '',
-          ingredients: data.ingredients?.length > 0 ? data.ingredients : [''],
-        });
-
-        setTags(data.tags || []);
-        setImageUrl(data.image_url || null);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching menu item:', error);
-        setError('An unexpected error occurred. Please try again later.');
-        setIsLoading(false);
+    // Only run the redirect check after auth state is confirmed loaded
+    if (!authLoading) {
+      // Redirect to login if not authenticated
+      if (!user) {
+        navigate('/login', { state: { returnTo: `/edit-menu-item/${id}` } });
+        return;
       }
-    };
+      
+      // Redirect regular users to home
+      if (user && userType !== 'user1') {
+        navigate('/');
+        toast({
+          title: 'Access Denied',
+          description: 'Only mess workers can edit menu items.',
+          variant: 'destructive',
+        });
+        return;
+      }
 
-    if (id && !loading && user && userType === 'user1') {
-      fetchMenuItem();
+      // Only fetch data if we're not redirecting and have an ID
+      if (id && user && userType === 'user1' && !dataFetched) {
+        fetchMenuItem();
+      }
     }
-  }, [id, user, loading, navigate, userType, toast]);
+  }, [id, user, authLoading, navigate, userType, dataFetched]);
+
+  const fetchMenuItem = async () => {
+    try {
+      console.log("Fetching menu item with ID:", id);
+      const { data, error: fetchError } = await supabase
+        .from('menu_items')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching menu item:', fetchError);
+        setError('Failed to load menu item data. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (!data) {
+        setError('Menu item not found');
+        setIsLoading(false);
+        return;
+      }
+
+      console.log("Menu item data fetched:", data);
+      setFormData({
+        title: data.title || '',
+        description: data.description || '',
+        meal_type: data.meal_type || '',
+        serving_time: data.serving_time || '',
+        detailed_description: data.detailed_description || '',
+        ingredients: data.ingredients?.length > 0 ? data.ingredients : [''],
+      });
+
+      setTags(data.tags || []);
+      setImageUrl(data.image_url || null);
+      setDataFetched(true);
+      setIsLoading(false);
+    } catch (error) {
+      console.error('Error fetching menu item:', error);
+      setError('An unexpected error occurred. Please try again later.');
+      setIsLoading(false);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -268,7 +269,7 @@ const EditMenuItem = () => {
           serving_time: formData.serving_time,
           detailed_description: formData.detailed_description,
           ingredients: filteredIngredients,
-          updated_at: new Date().toISOString(), // Fix: Convert Date to ISO string
+          updated_at: new Date().toISOString(), // Convert Date to ISO string
         })
         .eq('id', id);
 
@@ -294,14 +295,48 @@ const EditMenuItem = () => {
     }
   };
 
-  if (loading || isLoading) {
+  // Show a more granular loading state rather than a full-page loader
+  const renderLoadingContent = () => (
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader>
+        <Skeleton className="h-8 w-64 mb-2" />
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-10 w-full" />
+        </div>
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-40" />
+          <Skeleton className="h-20 w-full" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-36" />
+            <Skeleton className="h-10 w-full" />
+          </div>
+        </div>
+      </CardContent>
+      <CardFooter className="border-t p-6">
+        <Skeleton className="h-10 w-32 mr-auto" />
+        <Skeleton className="h-10 w-40" />
+      </CardFooter>
+    </Card>
+  );
+
+  // Don't render a loading screen if we're still checking auth, just render nothing
+  if (authLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 container mx-auto px-4 md:px-6 pt-24 pb-12 flex items-center justify-center">
           <div className="flex flex-col items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="mt-4 text-lg text-muted-foreground">Loading...</p>
+            <p className="mt-4 text-lg text-muted-foreground">Verifying access...</p>
           </div>
         </main>
         <Footer />
@@ -309,7 +344,7 @@ const EditMenuItem = () => {
     );
   }
 
-  // Don't render content until we confirm user is authenticated and is user1
+  // Only render 'null' if we're still checking auth permissions and redirecting
   if (!user || userType !== 'user1') {
     return null;
   }
@@ -351,225 +386,227 @@ const EditMenuItem = () => {
           </p>
         </div>
 
-        <Card className="max-w-2xl mx-auto">
-          <form onSubmit={handleSubmit}>
-            <CardHeader>
-              <CardTitle>Menu Item Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="title">Title*</Label>
-                <Input
-                  id="title"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleChange}
-                  placeholder="Enter the name of the dish"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="description">Short Description*</Label>
-                <Textarea
-                  id="description"
-                  name="description"
-                  value={formData.description}
-                  onChange={handleChange}
-                  placeholder="A brief description of the dish"
-                  required
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {isLoading ? renderLoadingContent() : (
+          <Card className="max-w-2xl mx-auto">
+            <form onSubmit={handleSubmit}>
+              <CardHeader>
+                <CardTitle>Menu Item Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="meal_type">Meal Type*</Label>
-                  <Select
-                    value={formData.meal_type}
-                    onValueChange={(value) => handleSelectChange('meal_type', value)}
-                  >
-                    <SelectTrigger id="meal_type">
-                      <SelectValue placeholder="Select meal type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="breakfast">Breakfast</SelectItem>
-                      <SelectItem value="lunch">Lunch</SelectItem>
-                      <SelectItem value="snacks">Snacks</SelectItem>
-                      <SelectItem value="dinner">Dinner</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="serving_time">Serving Time*</Label>
+                  <Label htmlFor="title">Title*</Label>
                   <Input
-                    id="serving_time"
-                    name="serving_time"
-                    value={formData.serving_time}
+                    id="title"
+                    name="title"
+                    value={formData.title}
                     onChange={handleChange}
-                    placeholder="e.g. 7:30 - 9:30 AM"
+                    placeholder="Enter the name of the dish"
                     required
                   />
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="detailed_description">Detailed Description</Label>
-                <Textarea
-                  id="detailed_description"
-                  name="detailed_description"
-                  value={formData.detailed_description}
-                  onChange={handleChange}
-                  placeholder="A more detailed description of the dish, its origin, or how it's prepared"
-                  rows={3}
-                />
-              </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Short Description*</Label>
+                  <Textarea
+                    id="description"
+                    name="description"
+                    value={formData.description}
+                    onChange={handleChange}
+                    placeholder="A brief description of the dish"
+                    required
+                  />
+                </div>
 
-              <div className="space-y-2">
-                <Label>Ingredients</Label>
-                {formData.ingredients.map((ingredient, index) => (
-                  <div key={index} className="flex items-center space-x-2">
-                    <Input
-                      value={ingredient}
-                      onChange={(e) => handleIngredientChange(index, e.target.value)}
-                      placeholder={`Ingredient ${index + 1}`}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeIngredient(index)}
-                      disabled={formData.ingredients.length <= 1}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="meal_type">Meal Type*</Label>
+                    <Select
+                      value={formData.meal_type}
+                      onValueChange={(value) => handleSelectChange('meal_type', value)}
                     >
-                      <X className="h-4 w-4" />
-                    </Button>
+                      <SelectTrigger id="meal_type">
+                        <SelectValue placeholder="Select meal type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="breakfast">Breakfast</SelectItem>
+                        <SelectItem value="lunch">Lunch</SelectItem>
+                        <SelectItem value="snacks">Snacks</SelectItem>
+                        <SelectItem value="dinner">Dinner</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addIngredient}
-                  className="mt-2"
-                >
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Ingredient
-                </Button>
-              </div>
 
-              <div className="space-y-2">
-                <Label>Tags</Label>
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="pl-2 gap-1">
-                      {tag}
+                  <div className="space-y-2">
+                    <Label htmlFor="serving_time">Serving Time*</Label>
+                    <Input
+                      id="serving_time"
+                      name="serving_time"
+                      value={formData.serving_time}
+                      onChange={handleChange}
+                      placeholder="e.g. 7:30 - 9:30 AM"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="detailed_description">Detailed Description</Label>
+                  <Textarea
+                    id="detailed_description"
+                    name="detailed_description"
+                    value={formData.detailed_description}
+                    onChange={handleChange}
+                    placeholder="A more detailed description of the dish, its origin, or how it's prepared"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Ingredients</Label>
+                  {formData.ingredients.map((ingredient, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <Input
+                        value={ingredient}
+                        onChange={(e) => handleIngredientChange(index, e.target.value)}
+                        placeholder={`Ingredient ${index + 1}`}
+                      />
                       <Button
                         type="button"
                         variant="ghost"
                         size="icon"
-                        className="h-4 w-4 ml-1 hover:bg-transparent p-0"
-                        onClick={() => removeTag(tag)}
+                        onClick={() => removeIngredient(index)}
+                        disabled={formData.ingredients.length <= 1}
                       >
-                        <X className="h-3 w-3" />
+                        <X className="h-4 w-4" />
                       </Button>
-                    </Badge>
+                    </div>
                   ))}
-                </div>
-                <div className="flex space-x-2">
-                  <Input
-                    value={newTag}
-                    onChange={(e) => setNewTag(e.target.value)}
-                    placeholder="Add a tag (e.g. Spicy, Vegetarian)"
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-                  />
-                  <Button type="button" onClick={addTag} disabled={!newTag.trim()}>
-                    Add
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addIngredient}
+                    className="mt-2"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Ingredient
                   </Button>
                 </div>
-              </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="image">Food Image</Label>
-                <div className="mt-1 flex items-center">
-                  {imagePreview ? (
-                    <div className="relative">
-                      <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className="h-32 w-32 object-cover rounded-md"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-0 right-0 rounded-full h-6 w-6"
-                        onClick={removeImage}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : imageUrl ? (
-                    <div className="relative">
-                      <img
-                        src={imageUrl}
-                        alt="Menu item"
-                        className="h-32 w-32 object-cover rounded-md"
-                      />
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        size="icon"
-                        className="absolute top-0 right-0 rounded-full h-6 w-6"
-                        onClick={removeImage}
-                      >
-                        <X className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center">
-                      <label
-                        htmlFor="image-upload"
-                        className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-md border-gray-300 cursor-pointer hover:border-primary transition-colors"
-                      >
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                          <Image className="w-8 h-8 text-gray-400 mb-2" />
-                          <p className="text-xs text-gray-500">Upload Image</p>
-                        </div>
-                        <input
-                          id="image-upload"
-                          type="file"
-                          className="hidden"
-                          onChange={handleImageChange}
-                          accept="image/*"
-                        />
-                      </label>
-                    </div>
-                  )}
+                <div className="space-y-2">
+                  <Label>Tags</Label>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {tags.map((tag) => (
+                      <Badge key={tag} variant="secondary" className="pl-2 gap-1">
+                        {tag}
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-4 w-4 ml-1 hover:bg-transparent p-0"
+                          onClick={() => removeTag(tag)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex space-x-2">
+                    <Input
+                      value={newTag}
+                      onChange={(e) => setNewTag(e.target.value)}
+                      placeholder="Add a tag (e.g. Spicy, Vegetarian)"
+                      onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+                    />
+                    <Button type="button" onClick={addTag} disabled={!newTag.trim()}>
+                      Add
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between border-t p-6">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => navigate('/dashboard')}
-                disabled={isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  'Update Menu Item'
-                )}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+
+                <div className="space-y-2">
+                  <Label htmlFor="image">Food Image</Label>
+                  <div className="mt-1 flex items-center">
+                    {imagePreview ? (
+                      <div className="relative">
+                        <img
+                          src={imagePreview}
+                          alt="Preview"
+                          className="h-32 w-32 object-cover rounded-md"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-0 right-0 rounded-full h-6 w-6"
+                          onClick={removeImage}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : imageUrl ? (
+                      <div className="relative">
+                        <img
+                          src={imageUrl}
+                          alt="Menu item"
+                          className="h-32 w-32 object-cover rounded-md"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="icon"
+                          className="absolute top-0 right-0 rounded-full h-6 w-6"
+                          onClick={removeImage}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center">
+                        <label
+                          htmlFor="image-upload"
+                          className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-md border-gray-300 cursor-pointer hover:border-primary transition-colors"
+                        >
+                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                            <Image className="w-8 h-8 text-gray-400 mb-2" />
+                            <p className="text-xs text-gray-500">Upload Image</p>
+                          </div>
+                          <input
+                            id="image-upload"
+                            type="file"
+                            className="hidden"
+                            onChange={handleImageChange}
+                            accept="image/*"
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-between border-t p-6">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate('/dashboard')}
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    'Update Menu Item'
+                  )}
+                </Button>
+              </CardFooter>
+            </form>
+          </Card>
+        )}
       </main>
       <Footer />
     </div>

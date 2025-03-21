@@ -12,29 +12,35 @@ import MenuManagement from '@/components/dashboard/MenuManagement';
 import { Separator } from '@/components/ui/separator';
 
 const Dashboard = () => {
-  const { user, userType, loading } = useAuth();
+  const { user, userType, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('menu');
+  const [redirectChecked, setRedirectChecked] = useState(false);
 
   useEffect(() => {
-    // Redirect to login if not authenticated
-    if (!loading && !user) {
-      navigate('/login', { state: { returnTo: '/dashboard' } });
+    // Only do redirect checks after the auth state is loaded
+    if (!authLoading) {
+      // Redirect to login if not authenticated
+      if (!user) {
+        navigate('/login', { state: { returnTo: '/dashboard' } });
+      }
+      // Redirect regular users to home
+      else if (user && userType === 'user2') {
+        navigate('/');
+      }
+      setRedirectChecked(true);
     }
-    // Redirect regular users to home
-    else if (!loading && user && userType === 'user2') {
-      navigate('/');
-    }
-  }, [user, loading, navigate, userType]);
+  }, [user, authLoading, navigate, userType]);
 
-  if (loading) {
+  // Show a loading indicator only while auth is loading
+  if (authLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />
         <main className="flex-1 container mx-auto px-4 md:px-6 pt-24 pb-12 flex items-center justify-center">
           <div className="flex flex-col items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="mt-4 text-lg text-muted-foreground">Loading...</p>
+            <p className="mt-4 text-lg text-muted-foreground">Verifying access...</p>
           </div>
         </main>
         <Footer />
@@ -42,8 +48,8 @@ const Dashboard = () => {
     );
   }
 
-  // Don't render content until we confirm user is authenticated and is user1
-  if (!user || userType !== 'user1') {
+  // Don't render anything if we're still checking for redirect
+  if (!redirectChecked || !user || userType !== 'user1') {
     return null;
   }
 

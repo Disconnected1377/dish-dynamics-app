@@ -23,9 +23,9 @@ import {
   DialogTitle 
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const MenuManagement = () => {
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -37,13 +37,15 @@ const MenuManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     fetchMenuItems();
-  }, []);
+  }, [retryCount]);
 
   const fetchMenuItems = async () => {
     try {
+      console.log("Fetching menu items...");
       setLoading(true);
       const { data, error } = await supabase
         .from('menu_items')
@@ -57,7 +59,15 @@ const MenuManagement = () => {
           description: 'Failed to load menu items.',
           variant: 'destructive',
         });
+        
+        // If we fail, set a timeout to retry (max 3 times)
+        if (retryCount < 3) {
+          setTimeout(() => {
+            setRetryCount(prev => prev + 1);
+          }, 2000);
+        }
       } else {
+        console.log("Menu items fetched:", data?.length || 0, "items");
         setMenuItems(data || []);
       }
     } catch (error) {
@@ -171,14 +181,43 @@ const MenuManagement = () => {
     return colors[mealType] || '';
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-        <p>Loading menu items...</p>
-      </div>
-    );
-  }
+  const renderLoadingTable = () => (
+    <div className="rounded-md border overflow-hidden">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+            <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+            <TableHead><Skeleton className="h-4 w-20" /></TableHead>
+            <TableHead className="text-right"><Skeleton className="h-4 w-20 ml-auto" /></TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {[1, 2, 3].map((item) => (
+            <TableRow key={item}>
+              <TableCell>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-md" />
+                  <div>
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-20 mt-1" />
+                  </div>
+                </div>
+              </TableCell>
+              <TableCell><Skeleton className="h-6 w-20 rounded-full" /></TableCell>
+              <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-2">
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                  <Skeleton className="h-8 w-8 rounded-md" />
+                </div>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </div>
+  );
 
   return (
     <div>
@@ -206,7 +245,9 @@ const MenuManagement = () => {
         </div>
       </div>
 
-      {filteredMenuItems.length === 0 ? (
+      {loading ? (
+        renderLoadingTable()
+      ) : filteredMenuItems.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <p className="text-muted-foreground mb-4">
